@@ -1,0 +1,33 @@
+NEXORA CLOSET — DEPLOYMENT GUIDE
+
+A) BACKEND DEPLOY (Render example)
+1. Create a GitHub repository and upload the contents of the backend folder to it.
+2. In Render, create a new Web Service connected to that repository.
+3. Build command: npm install
+4. Start command: npm start
+5. Health endpoint: /health
+6. After deployment, open https://YOUR-BACKEND.onrender.com/health; it should show {"ok":true,...}.
+7. Copy the backend URL.
+
+B) FRONTEND DEPLOY (Netlify / Vercel / GitHub Pages)
+1. Upload frontend folder contents to a separate repository or static hosting site.
+2. In frontend/app.js, change `const API_BASE = '';` to `const API_BASE = 'https://YOUR-BACKEND.onrender.com';`.
+3. Redeploy the frontend.
+4. If CORS blocks requests, set backend environment variable ALLOWED_ORIGIN to the exact frontend URL and redeploy backend.
+
+C) LOCAL TEST
+Backend: open terminal inside backend folder; run `npm start`.
+Frontend is served separately only if API_BASE points to backend. For easy local full-stack testing, copy frontend files into a `public` folder in backend and add static-file serving, or use a static host with API_BASE set to http://localhost:3000.
+
+DEMO CREDENTIALS
+Email/User ID: seller@nexora.demo
+Password: Demo123!
+These credentials only demonstrate the front-end login prompt. They are NOT connected to real authentication. Do not use real passwords or show this as a secure account system.
+
+BEFORE PUBLIC LAUNCH
+- Replace JSON-file storage with managed database (e.g. PostgreSQL).
+- Add real authentication, hashed passwords, authorization and account recovery.
+- Add safe image upload storage, reporting/moderation, privacy policy, terms, and security checks.
+- Add verified rental conditions, returns/deposits, payments and subscription billing only after legal/accounting review.
+- Use HTTPS, backups, logs and environment secrets.
+- This starter is a demo; no real checkout or payment exists.

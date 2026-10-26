@@ -1,0 +1,21 @@
+// Set this to your deployed backend URL when frontend/backend are hosted separately.
+// Example: window.NEXORA_API_URL = "https://your-api.onrender.com";
+const API_BASE = window.NEXORA_API_URL || '';
+const $=s=>document.querySelector(s);let type='All',category='All',listing=0;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(url,opts={}){let r=await fetch(API_BASE+url,{headers:{'Content-Type':'application/json'},...opts}),d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}
+const money=n=>'₹ '+Number(n).toLocaleString('en-IN');
+async function load(){try{let q=$('#search').value,items=await api(`/api/listings?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&category=${encodeURIComponent(category)}`);$('#products').innerHTML=items.length?items.map(p=>`<article class="product"><img src="${esc(p.image)}" alt="${esc(p.title)}" onerror="this.src='https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=700&q=80'"><div class="pbody"><span class="badge ${p.type==='Rent'?'rent':''}">${p.type==='Rent'?'For Rent':'For Sale'}</span><h3>${esc(p.title)}</h3><p class="meta">Size: ${esc(p.size)} · ${esc(p.condition)} · ${esc(p.city)}</p><div class="price">${money(p.price)} ${p.originalPrice?`<small><s>${money(p.originalPrice)}</s></small>`:''}</div><div class="cardactions"><button class="chatbtn" onclick="chat(${p.id},'${esc(p.title)}')">Chat</button><button class="buybtn" onclick="chat(${p.id},'${esc(p.title)}')">${p.type==='Rent'?'Rent Now':'Buy Now'}</button></div></div></article>`).join(''):'<p>No outfits found. Try another search or create a listing.</p>'}catch(e){$('#products').innerHTML='<p class="loading">Cannot connect to backend. Check API URL and backend deployment.</p>'}}
+document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{type=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));load()});
+document.querySelectorAll('[data-type]').forEach(b=>b.onclick=()=>{type=b.dataset.type;load()});
+document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{category=b.dataset.cat;$('#shop').scrollIntoView();load()});
+$('#search').addEventListener('input',()=>load());
+$('#listingForm').onsubmit=async e=>{e.preventDefault();try{let body=Object.fromEntries(new FormData(e.currentTarget));await api('/api/listings',{method:'POST',body:JSON.stringify(body)});$('#notice').textContent='Listing published and added to the shop!';e.currentTarget.reset();type='All';category='All';load();$('#shop').scrollIntoView({behavior:'smooth'})}catch(err){$('#notice').textContent=err.message}};
+window.chat=async(id,title)=>{listing=id;$('#chatTitle').textContent='Listing: '+title+' — ask about price, size or rental dates.';$('#modal').classList.remove('hidden');await messages()};
+window.closeChat=()=>$('#modal').classList.add('hidden');
+async function messages(){try{let ms=await api('/api/chat?listingId='+listing);$('#messages').innerHTML=ms.map(m=>`<div class="message"><b>${esc(m.name)} · ${new Date(m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</b><br>${esc(m.message)}</div>`).join('')||'<small>Start the conversation by sending a message.</small>';$('#messages').scrollTop=$('#messages').scrollHeight}catch(e){$('#messages').textContent='Could not load messages. Check backend connection.'}}
+$('#chatForm').onsubmit=async e=>{e.preventDefault();let b=Object.fromEntries(new FormData(e.currentTarget));try{await api('/api/chat',{method:'POST',body:JSON.stringify({...b,listingId:listing})});e.currentTarget.elements.message.value='';messages()}catch(err){alert(err.message)}};
+$('#subscribe').onsubmit=e=>{e.preventDefault();$('#submsg').textContent=' Thanks! Demo only.';e.currentTarget.reset()};
+$('#accountBtn').onclick=()=>$('#loginModal').classList.remove('hidden');
+$('#loginForm').onsubmit=e=>{e.preventDefault();let b=Object.fromEntries(new FormData(e.currentTarget));if(b.email==='seller@nexora.demo'&&b.password==='Demo123!')$('#loginMessage').textContent='Demo login successful. Welcome to NEXORA CLOSET!';else $('#loginMessage').textContent='Demo only: use seller@nexora.demo / Demo123!';};
+load();setInterval(()=>{if(!$('#modal').classList.contains('hidden'))messages()},5000);
